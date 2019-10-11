@@ -1,4 +1,4 @@
-# Release date: 03-10-2019
+# Release date: 10-10-2019
 
 import PyPDF2, glob, os, csv, sys
 from pandas import ExcelWriter
@@ -13,8 +13,7 @@ def extractContent(pageNumber):
 
 # Function to get word index ------------------------------
 def indexFunction(word, content):
-	contentLen = len(content)
-	wordLen = len(word)
+	contentLen, wordLen = len(content), len(word)
 	for i in range(contentLen):
 		new_word = content[i:(i+wordLen)]
 		if new_word == word:
@@ -25,6 +24,7 @@ def indexFunction(word, content):
 # Function to get the range of pages of each unit ---------
 def pagesFunction():
 	print('Page function-----------------------------------')
+	aPageStart, aPageEnd = [], []
 	lookUp = 'Unit no.:'
 	last_page = number_of_pages - 1
 
@@ -42,43 +42,63 @@ def pagesFunction():
 
 	# Get the very last page
 	aPageEnd.append(last_page)
+
 	print('Page function completed!------------------------')
 	print('\n')
+	return aPageStart, aPageEnd
 
 # Get SINGLE value function---------------------------------
-def get_value_function(pageContent, wordStart, wordEnd):
+def get_value_function(pageContent, wordStart, wordEnd, max_len = 45):
 	# wordStart and wordEnd are unique values, not lists
-
 	posStart = pageContent.index(wordStart) + len(wordStart)
 	newContent = pageContent[posStart:]
 
 	posEnd = indexFunction(wordEnd, newContent)
 	unitFeature = newContent[:posEnd].strip()
 
-	return unitFeature
+	# Check the lenght in order to avoid errors
+	if len(unitFeature) < max_len:
+		return unitFeature
+	else:
+		print('Not valid feature. Content is too long')
 
-'''
-# Get MULTIPLE values function-----------------------------
-def get_values_function(page, aWordStart, aWordEnd):
-	# Extract the content from the page
+# Possible main--------------------------------------------
+for page in range(pageStart, pageEnd):
+	# Default values
+	inner_list = []
+
+	# Extract page content
 	pageContent = extractContent(page)
-	aUnitFeature = []
+	print('Checking at page number', page+1)
 
 	for wordStart, wordEnd in zip(aWordStart, aWordEnd):
-		posStart = pageContent.index(wordStart) + len(wordStart)
-		newContent = pageContent[posStart:]
+		print('Looking for ', wordStart, 'and', wordEnd)
 
-		if wordEnd in newContent:
-			try:
-				posEnd = indexFunction(wordEnd, newContent)
-				unitFeature = newContent[:posEnd].strip()
-				aUnitFeature.append(unitFeature)
-			except:
-				print(wordEnd, 'wordEnd not found at page', page)
-				break
+		'''
+		For now all the fan data is in the same page. Once it finds the pair,
+		just extract the motherfucking features and go home
+		'''	
 
-	return aUnitFeature
-'''
+		# Work in starting and ending pairs, page by page
+		if (wordStart in pageContent) and (wordEnd in pageContent):
+			print('Found on page', page+1)
+			unitFeature = get_value_function(pageContent, wordStart, wordEnd)
+			inner_list.append(unitFeature)
+		else:
+			print('No luck this time')
+			print('\n')
+			# Exit loop and go for the next page
+			break
+
+	# Check the lenght and append to the outter list
+	if len(inner_list) == len(aWordStart):
+		print('New entry for the outter list!')
+		print('\n')
+		outter_list.append(inner_list)
+		inner_list = []
+
+return outter_list
+#----------------------------------------------------------
 
 # First page function -------------------------------------
 def fpFunction():
@@ -122,7 +142,6 @@ def fpFunction():
 		sys.exit()
 	print('First page function done------------------------')
 	print('\n')
-
 
 # EC fan function -----------------------------------------
 def ecFunction():
@@ -269,8 +288,6 @@ newList = []
 
 for fileName in glob.glob('*.pdf'):
 	# Initialize ----------------------------------------------
-	aPageStart = []
-	aPageEnd = []
 	aDVSize = []
 	aDVLine = []
 	aPageStart = []
@@ -292,9 +309,10 @@ for fileName in glob.glob('*.pdf'):
 	print('\n')
 
 	# Get the range of the pages ------------------------------
-	pagesFunction()
-	df_line, df_ahu, df_ref = fpFunction()
-	df_airflow, df_static, df_number, df_power, df_rpm, df_amperes = ecFunction()
+	aPageStart, aPageEnd = pagesFunction()
+	print(aPageStart, aPageEnd)
+	#df_line, df_ahu, df_ref = fpFunction()
+	#df_airflow, df_static, df_number, df_power, df_rpm, df_amperes = ecFunction()
 
 	#print(df_line)
 
@@ -326,6 +344,5 @@ for fileName in glob.glob('*.pdf'):
 	'''
 
 	pdfFileObj.close()
-
 
 #-----------------------------------------
