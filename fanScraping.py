@@ -63,6 +63,21 @@ def get_value_function(pageContent, wordStart, wordEnd, max_len = 45):
 		print('Not valid feature. Content is too long')
 
 # Possible main--------------------------------------------
+'''
+This should be the main scraping function.
+
+def extractFeatures(pageStart = 0, pageEnd = last_page, aWordStart, aWordEnd):
+	# Do something
+	return outter_list
+
+In order to get the ID of each fan, just retun the page number.
+Create a new function to match the page number and the unit.
+
+One should call it and just pass the aWordStart and aWordEnd lists to
+extract the features. It should be performed across the entire document
+(pageStart = 0, pageEnd = last_page) but it's good to have such function
+so that it can check unit by unit
+'''
 for page in range(pageStart, pageEnd):
 	# Default values
 	inner_list = []
