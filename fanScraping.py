@@ -66,7 +66,7 @@ def get_value_function(pageContent, wordStart, wordEnd, max_len = 45):
 '''
 This should be the main scraping function.
 
-def extractFeatures(pageStart = 0, pageEnd = last_page, aWordStart, aWordEnd):
+def extractFeatures(aWordStart, aWordEnd, pageStart = 0, pageEnd = last_page):
 	# Do something
 	return outter_list
 
@@ -81,6 +81,7 @@ so that it can check unit by unit
 for page in range(pageStart, pageEnd):
 	# Default values
 	inner_list = []
+	inner_list.append(page)
 
 	# Extract page content
 	pageContent = extractContent(page)
