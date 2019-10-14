@@ -85,6 +85,8 @@ for page in range(pageStart, pageEnd):
 			unitFeature = get_value_function(pageContent, wordStart, wordEnd)
 			inner_list.append(unitFeature)
 		else:
+			# Reset inner list
+			inner_list = []
 			print('No luck this time')
 			print('\n')
 			# Exit loop and go for the next page
@@ -316,7 +318,6 @@ for fileName in glob.glob('*.pdf'):
 
 	#print(df_line)
 
-
 	'''
 	# Dataframe
 	df = pd.DataFrame()
@@ -329,18 +330,14 @@ for fileName in glob.glob('*.pdf'):
 	df['Power'] = df_power
 	df['rpm'] = df_rpm
 	df['A'] = df_amperes
-
 	columns = ['Line', 'Airflow', 'Static pressure', 'Number of fans', 'Power', 'rpm', 'A']
-
 	for col in columns:
 		df[col] = df[col].astype(float)
-
 	# Export to Excel
 	name = 'Fans Results.xlsx'
 	writer = pd.ExcelWriter(name)
 	df.to_excel(writer, index = False)
 	writer.save()
-
 	'''
 
 	pdfFileObj.close()
