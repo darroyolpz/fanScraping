@@ -1,5 +1,3 @@
-# Release date: 10-10-2019
-
 import PyPDF2, glob, os, csv, sys
 from pandas import ExcelWriter
 import pandas as pd
@@ -66,7 +64,7 @@ def get_value_function(pageContent, wordStart, wordEnd, max_len = 45):
 '''
 This should be the main scraping function.
 
-def extractFeatures(aWordStart, aWordEnd, pageStart = 0, pageEnd = last_page):
+def extractFeatures(wordList, pageStart = 0, pageEnd = last_page):
 	# Do something
 	return outter_list
 
@@ -78,44 +76,42 @@ extract the features. It should be performed across the entire document
 (pageStart = 0, pageEnd = last_page) but it's good to have such function
 so that it can check unit by unit
 '''
-for page in range(pageStart, pageEnd):
-	# Default values
-	inner_list = []
-	inner_list.append(page)
-
-	# Extract page content
-	pageContent = extractContent(page)
-	print('Checking at page number', page+1)
-
-	for wordStart, wordEnd in zip(aWordStart, aWordEnd):
-		print('Looking for ', wordStart, 'and', wordEnd)
-
-		'''
-		For now all the fan data is in the same page. Once it finds the pair,
-		just extract the motherfucking features and go home
-		'''	
-
-		# Work in starting and ending pairs, page by page
-		if (wordStart in pageContent) and (wordEnd in pageContent):
-			print('Found on page', page+1)
-			unitFeature = get_value_function(pageContent, wordStart, wordEnd)
-			inner_list.append(unitFeature)
-		else:
-			# Reset inner list
-			inner_list = []
-			print('No luck this time')
-			print('\n')
-			# Exit loop and go for the next page
-			break
-
-	# Check the lenght and append to the outter list
-	if len(inner_list) == len(aWordStart):
-		print('New entry for the outter list!')
-		print('\n')
-		outter_list.append(inner_list)
+def extractFeatures(wordList, pageStart = 0, pageEnd = last_page):
+	for page in range(pageStart, pageEnd):
+		# Initiate the inner_list and get the page number
 		inner_list = []
+		inner_list.append(page)
 
-return outter_list
+		# Extract page content
+		pageContent = extractContent(page)
+		print('Checking at page number', page+1)
+
+		for item in wordList:
+			wordStart, wordEnd = item[0], item[1] 
+			print('Looking for ', wordStart, 'and', wordEnd)
+
+			# Work in starting and ending pairs, page by page
+			if (wordStart in pageContent) and (wordEnd in pageContent):
+				print('Found on page', page+1)
+				unitFeature = get_value_function(pageContent, wordStart, wordEnd)
+				inner_list.append(unitFeature)
+			else:
+				# Reset inner list
+				inner_list = []
+				print('No luck this time')
+				print('\n')
+				# Exit loop and go for the next page
+				break
+
+		# Check the lenght and append to the outter list
+		if len(inner_list) == len(aWordStart):
+			print('New entry for the outter list!')
+			print('\n')
+			outter_list.append(inner_list)
+			# Reset inner list for next feature
+			inner_list = []
+
+	return outter_list
 #----------------------------------------------------------
 
 # First page function -------------------------------------
@@ -271,16 +267,7 @@ def ecFunction():
 		elif 'x' not in row[4]:
 			unitFeature = row[4][:-1].strip()			
 			df_amperes.append(unitFeature)
-	'''
-	print(df_ec)
-	print('\n')
-	print('Airflow:', df_airflow)
-	print('Static pressure:', df_static)
-	print('Number of fans:', df_number)
-	print('Power:', df_power)
-	print('RPM:', df_rpm)
-	print('Amperes:', df_amperes)
-	'''
+	
 	if (len(df_airflow) == len(df_static)) and (len(df_airflow) == len(df_number)) and (len(df_airflow) == len(df_power)) and (len(df_airflow) == len(df_rpm)) and (len(df_airflow) == len(df_amperes)):
 		return df_airflow, df_static, df_number, df_power, df_rpm, df_amperes
 		print('Everything well returned..........................................................................................')
@@ -293,8 +280,6 @@ def ecFunction():
 		for df in dfs:
 			print(len(df))
 		sys.exit()
-
-	
 
 # Main ----------------------------------------------------
 # Open file and read it
@@ -357,5 +342,3 @@ for fileName in glob.glob('*.pdf'):
 	'''
 
 	pdfFileObj.close()
-
-#-----------------------------------------
