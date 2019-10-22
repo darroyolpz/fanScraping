@@ -60,60 +60,6 @@ def get_value_function(pageContent, wordStart, wordEnd, max_len = 45):
 	else:
 		print('Not valid feature. Content is too long')
 
-# Possible main--------------------------------------------
-'''
-This should be the main scraping function.
-
-def extractFeatures(wordList, pageStart = 0, pageEnd = last_page):
-	# Do something
-	return outter_list
-
-In order to get the ID of each fan, just retun the page number.
-Create a new function to match the page number and the unit.
-
-One should call it and just pass the aWordStart and aWordEnd lists to
-extract the features. It should be performed across the entire document
-(pageStart = 0, pageEnd = last_page) but it's good to have such function
-so that it can check unit by unit
-'''
-def extractFeatures(wordList, pageStart = 0, pageEnd = last_page):
-	for page in range(pageStart, pageEnd):
-		# Initiate the inner_list and get the page number
-		inner_list = []
-		inner_list.append(page)
-
-		# Extract page content
-		pageContent = extractContent(page)
-		print('Checking at page number', page+1)
-
-		for item in wordList:
-			wordStart, wordEnd = item[0], item[1] 
-			print('Looking for ', wordStart, 'and', wordEnd)
-
-			# Work in starting and ending pairs, page by page
-			if (wordStart in pageContent) and (wordEnd in pageContent):
-				print('Found on page', page+1)
-				unitFeature = get_value_function(pageContent, wordStart, wordEnd)
-				inner_list.append(unitFeature)
-			else:
-				# Reset inner list
-				inner_list = []
-				print('No luck this time')
-				print('\n')
-				# Exit loop and go for the next page
-				break
-
-		# Check the lenght and append to the outter list
-		if len(inner_list) == len(aWordStart):
-			print('New entry for the outter list!')
-			print('\n')
-			outter_list.append(inner_list)
-			# Reset inner list for next feature
-			inner_list = []
-
-	return outter_list
-#----------------------------------------------------------
-
 # First page function -------------------------------------
 def fpFunction():
 	print('Starting first page function--------------------')
@@ -157,6 +103,61 @@ def fpFunction():
 	print('First page function done------------------------')
 	print('\n')
 
+# Possible main--------------------------------------------
+'''
+This should be the main scraping function.
+def extractFeatures(wordList, pageStart = 0, pageEnd = last_page):
+	# Do something
+	return outter_list
+
+In order to get the ID of each fan, just retun the page number.
+Create a new function to match the page number and the unit.
+
+One should call it and just pass the aWordStart and aWordEnd lists to
+extract the features. It should be performed across the entire document
+(pageStart = 0, pageEnd = last_page) but it's good to have such function
+so that it can check unit by unit
+'''
+def extractFeatures(aWordStart, aWordEnd, pageStart, pageEnd):
+	outter_list = []
+	for page in range(pageStart, pageEnd):
+		# Initiate the inner_list and get the page number
+		inner_list = []
+		inner_list.append(page + 1) # In order to show real page number
+
+		# Extract page content
+		pageContent = extractContent(page)
+		print('Checking at page number', page+1)
+
+		for wordStart, wordEnd in zip(aWordStart, aWordEnd):
+			print('Looking for ', wordStart, 'and', wordEnd)
+
+			# Work in starting and ending pairs, page by page
+			if (wordStart in pageContent) and (wordEnd in pageContent):
+				print('Found on page', page+1)
+				unitFeature = get_value_function(pageContent, wordStart, wordEnd)
+				inner_list.append(unitFeature)
+			else:
+				# Reset inner list
+				inner_list = []
+				print('No luck this time')
+				print('\n')
+				# Exit loop and go for the next page
+				break
+
+		# Check the lenght and append to the outter list
+		if len(inner_list) == len(aWordStart) + 1:
+			print('New entry for the outter list!')
+			print('\n')
+			outter_list.append(inner_list)
+			# Reset inner list for next feature
+			inner_list = []
+
+	try:
+		return outter_list
+	except:
+		print('No outter_list found!')
+#----------------------------------------------------------
 # EC fan function -----------------------------------------
 def ecFunction():
 	print('Starting EC function----------------------------')
@@ -313,7 +314,13 @@ for fileName in glob.glob('*.pdf'):
 
 	# Get the range of the pages ------------------------------
 	aPageStart, aPageEnd = pagesFunction()
+	last_page = aPageEnd[-1:][0]
 	print(aPageStart, aPageEnd)
+	print('\n')
+	aWordStart = ['caudal de aire', 'húmedas)', 'Potencia', 'Velocidad (nominal)', 'Amperios']
+	aWordEnd = ['m', 'Pa', 'kW', 'RPM', 'Tensión']
+	outter = extractFeatures(aWordStart, aWordEnd, 0, last_page)
+	print(outter)
 	#df_line, df_ahu, df_ref = fpFunction()
 	#df_airflow, df_static, df_number, df_power, df_rpm, df_amperes = ecFunction()
 
