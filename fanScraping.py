@@ -105,11 +105,6 @@ def fpFunction():
 
 # Possible main--------------------------------------------
 '''
-This should be the main scraping function.
-def extractFeatures(wordList, pageStart = 0, pageEnd = last_page):
-	# Do something
-	return outter_list
-
 In order to get the ID of each fan, just retun the page number.
 Create a new function to match the page number and the unit.
 
