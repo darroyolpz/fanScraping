@@ -62,9 +62,9 @@ def get_value_function(pageContent, wordStart, wordEnd, max_len = 45):
 
 # First page function -------------------------------------
 def fpFunction():
+	inner_list, outter_list = [], []
 	print('Starting first page function--------------------')
-	df_ahu, df_line, df_ref = [], [], []
-	for page in aPageStart:
+	for page, pageEnd in zip(aPageStart, aPageEnd):
 		print('Looking at', page, 'page')
 		pageContent = extractContent(page)
 		print('\n')
@@ -72,28 +72,27 @@ def fpFunction():
 		# Get line
 		wordStart = 'Unit no.'
 		wordEnd = 'Fecha'
-		value = get_value_function(page, wordStart, wordEnd)
-		df_line.append(value)
+		line = get_value_function(pageContent, wordStart, wordEnd)
 
 		# Get AHU type
 		for ahu in ahus:
 			if ahu in pageContent:
-				df_ahu.append(ahu)
+				dv = ahu
 				break
 
 		# Get reference
 		wordStart = 'Planta no.'
 		wordEnd = 'Unit no.'
+		ref = get_value_function(pageContent, wordStart, wordEnd)
 
-		value = get_value_function(page, wordStart, wordEnd)
-		df_ref.append(value)
+		# Airflow
+		airflow = get_value_function(pageContent, ')', 'm')
+
+		inner_list = [page, pageEnd, line, dv, ref, airflow]
+		outter_list.append(inner_list)
 
 
-	print('Len df_line', len(df_line))
-	print('Len df_ahu', len(df_ahu))
-	print('Len df_ref', len(df_ref))
-	print('\n')
-
+	'''
 	if (len(df_line) == len(df_ahu)) and (len(df_line) == len(df_ref)):
 		print('Page function completed!------------------------')
 		return df_line, df_ahu, df_ref
@@ -102,12 +101,13 @@ def fpFunction():
 		sys.exit()
 	print('First page function done------------------------')
 	print('\n')
+	'''
+	return outter_list
 
 # Possible main--------------------------------------------
 '''
 In order to get the ID of each fan, just retun the page number.
 Create a new function to match the page number and the unit.
-
 One should call it and just pass the aWordStart and aWordEnd lists to
 extract the features. It should be performed across the entire document
 (pageStart = 0, pageEnd = last_page) but it's good to have such function
@@ -153,129 +153,6 @@ def extractFeatures(aWordStart, aWordEnd, pageStart, pageEnd):
 	except:
 		print('No outter_list found!')
 #----------------------------------------------------------
-# EC fan function -----------------------------------------
-def ecFunction():
-	print('Starting EC function----------------------------')
-	df_ec = []
-	# Keywords
-	keyword = ', Plug-fan'
-	aWordStart = ['caudal de aire', 'húmedas)', 'Potencia', 'Velocidad (nominal)', 'Amperios']
-	aWordEnd = ['m', 'Pa', 'kW', 'RPM', 'Tensión']
-
-	# Loop through all the lines, pages by page
-	for startPage, endPage in zip(aPageStart, aPageEnd):
-		# Page by page
-		for page in range(startPage, endPage):
-			print('Page number:', page + 1)
-
-			# Extract content
-			pageContent = extractContent(page)
-
-			if keyword in pageContent:
-				try:
-					print(keyword, 'found in page', page + 1)
-					inner = []
-					for wordStart, wordEnd in zip(aWordStart, aWordEnd):
-						print('Looking for starting word', wordStart)
-
-						posStart = pageContent.index(wordStart) + len(wordStart)
-						newContent = pageContent[posStart:]
-
-						if wordEnd in newContent:
-							posEnd = indexFunction(wordEnd, newContent)
-							unitFeature = newContent[:posEnd]
-							inner.append(unitFeature)
-							print(wordEnd, 'found already!')
-						else:
-							pageContent = extractContent(page + 1)
-							posEnd = indexFunction(wordEnd, newContent)
-							unitFeature = newContent[:posEnd]
-							inner.append(unitFeature)
-							print(wordEnd, 'found already!')
-
-					df_ec.append(inner)
-					print(df_ec)
-					print('\n')
-				except:
-					print('False positive')
-					pass
-
-	df_airflow, df_static, df_number, df_power, df_rpm, df_amperes = [], [], [], [], [], []
-
-	# Cleaning out my closet ------------------------------
-	for row in df_ec:
-		# Airflow
-		df_airflow.append(row[0])
-
-		# Static pressure
-		df_static.append(row[1])
-
-		# Number of fans - Multiple fans
-		if 'x' in row[2]:
-			print(row)
-			# Number of fans - Multiple fans
-			wordStart = '('
-			wordEnd = 'x'
-
-			posStart = row[2].index(wordStart) + len(wordStart)
-			newContent = row[2][posStart:]
-			posEnd = indexFunction(wordEnd, newContent)
-			unitFeature = newContent[:posEnd].strip()			
-			df_number.append(unitFeature) # Number of fans - Multiple fans
-
-			# For power - Multiple fans
-			wordStart = 'x'
-
-			posStart = row[2].index(wordStart) + len(wordStart)
-			newContent = row[2][posStart:]
-			unitFeature = newContent.strip()			
-			df_power.append(unitFeature)
-
-		elif 'x' not in row[2]:
-			# Number of fans - Single fan
-			df_number.append('1')
-
-			# For power - Single fan
-			# For power - Multiple fans
-			wordStart = 'nominal'
-
-			posStart = row[2].index(wordStart) + len(wordStart)
-			newContent = row[2][posStart:]
-			unitFeature = newContent.strip()			
-			df_power.append(unitFeature)
-
-
-		# RPM
-		df_rpm.append(row[3].strip())
-
-		# For amperes
-		if 'x' in row[4]:
-			print(row)
-			# Number of fans - Multiple fans
-			wordStart = ')'
-			wordEnd = 'A'
-
-			posStart = row[4].index(wordStart) + len(wordStart)
-			newContent = row[4][posStart:]
-			posEnd = indexFunction(wordEnd, newContent)
-			unitFeature = newContent[:posEnd].strip()			
-			df_amperes.append(unitFeature)
-		elif 'x' not in row[4]:
-			unitFeature = row[4][:-1].strip()			
-			df_amperes.append(unitFeature)
-	
-	if (len(df_airflow) == len(df_static)) and (len(df_airflow) == len(df_number)) and (len(df_airflow) == len(df_power)) and (len(df_airflow) == len(df_rpm)) and (len(df_airflow) == len(df_amperes)):
-		return df_airflow, df_static, df_number, df_power, df_rpm, df_amperes
-		print('Everything well returned..........................................................................................')
-		print('\n')
-		print('\n')
-		print('\n')
-	else:
-		print('Check the function. Lens do not match!')
-		dfs = [df_airflow, df_static, df_number, df_power, df_rpm, df_amperes]
-		for df in dfs:
-			print(len(df))
-		sys.exit()
 
 # Main ----------------------------------------------------
 # Open file and read it
@@ -312,10 +189,50 @@ for fileName in glob.glob('*.pdf'):
 	last_page = aPageEnd[-1:][0]
 	print(aPageStart, aPageEnd)
 	print('\n')
+
+	units = fpFunction()
+	columns_units = ['Page start', 'Page end', 'Line', 'AHU', 'Ref', 'Airflow']
+	df_units = pd.DataFrame(units, columns = columns_units)
+
+	name = 'Units.xlsx'
+	writer = pd.ExcelWriter(name)
+	df_units.to_excel(writer, index = False)
+	writer.save()
+
+	print(units)
+
+
 	aWordStart = ['caudal de aire', 'húmedas)', 'Potencia', 'Velocidad (nominal)', 'Amperios']
 	aWordEnd = ['m', 'Pa', 'kW', 'RPM', 'Tensión']
+	columns = ['Page', 'Airflow', 'Static Press.', 'Power Consump.', 'RPM', 'Amperes']
 	outter = extractFeatures(aWordStart, aWordEnd, 0, last_page)
-	print(outter)
+	df = pd.DataFrame(outter, columns = columns)
+
+	print('\n')
+
+	'''
+	new_inner, new_outter = [], []
+	power_consump = []
+	number_of_fans = []
+	amperes = []
+
+	for fan in outter:
+		page = fan[1]
+		val = fan[3]
+		if 'total' in val:
+			# Map the AHU unit
+			number_of_fans.append(get_value_function(val, '(', 'x'))
+			power_consump.append(val[10:])
+			amperes.append(get_value_function(fan[5], 'x', 'A')
+		else:
+
+
+			number_of_fans.append(1)
+			power_consump.append(val[7:])
+			amperes.append(fan[5][:-1])
+		print(amperes)
+
+	'''
 	#df_line, df_ahu, df_ref = fpFunction()
 	#df_airflow, df_static, df_number, df_power, df_rpm, df_amperes = ecFunction()
 
@@ -336,11 +253,14 @@ for fileName in glob.glob('*.pdf'):
 	columns = ['Line', 'Airflow', 'Static pressure', 'Number of fans', 'Power', 'rpm', 'A']
 	for col in columns:
 		df[col] = df[col].astype(float)
+	'''
+
 	# Export to Excel
+
 	name = 'Fans Results.xlsx'
 	writer = pd.ExcelWriter(name)
 	df.to_excel(writer, index = False)
 	writer.save()
-	'''
+
 
 	pdfFileObj.close()
