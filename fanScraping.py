@@ -55,7 +55,7 @@ def get_value_function(pageContent, wordStart, wordEnd, min_len = 1, max_len = 4
 	if (len(unitFeature) > min_len) & (len(unitFeature) < max_len):
 		return unitFeature
 	else:
-		print('Not valid feature. Content is too long')
+		print('Not valid feature. Content lenght is not ok!')
 		return 'Error flag!'
 
 # First page function -------------------------------------
@@ -114,13 +114,12 @@ def fpFunction():
 '''
 In order to get the ID of each fan, just retun the page number.
 Create a new function to match the page number and the unit.
-
 One should call it and just pass the aWordStart and aWordEnd lists to
 extract the features. It should be performed across the entire document
 (pageStart = 0, pageEnd = last_page) but it's good to have such function
 so that it can check unit by unit
 '''
-def extractFeatures(aWordStart, aWordEnd, pageStart, pageEnd):
+def extractFeatures(aWordStart, aWordEnd, pageStart, pageEnd, allowed_pages = 0):
 	outter_list = []
 	for page in range(pageStart, pageEnd):
 		# Initiate the inner_list and get the page number
@@ -143,7 +142,9 @@ def extractFeatures(aWordStart, aWordEnd, pageStart, pageEnd):
 					break
 				else:
 					inner_list.append(unitFeature)
-			else:
+
+			# If cheking of additional pages is allowed
+			elif allowed_pages > 0:
 				if len(inner_list) == 0:
 					# Reset inner list
 					inner_list = []
@@ -152,21 +153,25 @@ def extractFeatures(aWordStart, aWordEnd, pageStart, pageEnd):
 					# Exit loop and go for the next page
 					break
 				elif len(inner_list) > 0:
-					allowed_pages = 1
-					pageContent = extractContent(page + 1)
-					try:
-						unitFeature = get_value_function(pageContent, wordStart, wordEnd)
-						inner_list.append(unitFeature)
-					except:
-						print('No luck even in the next page')
-						print('\n')
-						# Exit loop and go for the next page
-						break
+					until_page = page + allowed_pages + 1
+					for new_page in range(page + 1, until_page):
+						pageContent = extractContent(new_page)
+						try:
+							print('\n')
+							print('New page being checked')
+							unitFeature = get_value_function(pageContent, wordStart, wordEnd)
+							inner_list.append(unitFeature)
+						except:
+							print('No luck even in the next page')
+							print('\n')
+							# Exit loop and go for the next page
+							break
 
 		# Check the lenght and append to the outter list
 		if len(inner_list) == len(aWordStart):
 			print('New entry for the outter list!')
 			print('\n')
+			# Add the number of page in the inner list
 			inner_list = [page + 1, *inner_list] # In order to show real page number
 			outter_list.append(inner_list)
 			# Reset inner list for next feature
@@ -245,7 +250,7 @@ for fileName in glob.glob('*.pdf'):
 	aWordStart = ['caudal de aire', 'húmedas)', 'Potencia', 'Velocidad (nominal)', 'Amperios']
 	aWordEnd = ['m', 'Pa', 'kW', 'RPM', 'Tensión']
 	columns = ['Page', 'Airflow', 'Static Press.', 'Power Consump.', 'RPM', 'Amperes']
-	outter = extractFeatures(aWordStart, aWordEnd, 0, last_page)
+	outter = extractFeatures(aWordStart, aWordEnd, 0, last_page, 1)
 	df = pd.DataFrame(outter, columns = columns)
 
 	print('\n')
@@ -256,25 +261,3 @@ for fileName in glob.glob('*.pdf'):
 	writer.save()
 
 	pdfFileObj.close()
-
-	'''
-	# Dataframe
-	df = pd.DataFrame()
-	df['Line'] = df_line
-	df['AHU'] = df_ahu
-	df['Ref'] = df_ref
-	df['Airflow'] = df_airflow
-	df['Static pressure'] = df_static
-	df['Number of fans'] = df_number
-	df['Power'] = df_power
-	df['rpm'] = df_rpm
-	df['A'] = df_amperes
-	columns = ['Line', 'Airflow', 'Static pressure', 'Number of fans', 'Power', 'rpm', 'A']
-	for col in columns:
-		df[col] = df[col].astype(float)
-	# Export to Excel
-	name = 'Fans Results.xlsx'
-	writer = pd.ExcelWriter(name)
-	df.to_excel(writer, index = False)
-	writer.save()
-	'''
