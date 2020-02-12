@@ -100,7 +100,7 @@ def fpFunction():
 	return outter_list
 
 # Possible main--------------------------------------------
-def extractFeatures(aWordStart, aWordEnd, pageStart, pageEnd, allowed_pages = 0):
+def extractFeatures(aWordStart, aWordEnd, pageStart, pageEnd, allowed_pages = 1):
 	outter_list = []
 	for page in range(pageStart, pageEnd):
 		# Initiate the inner_list and get the page number
@@ -116,6 +116,7 @@ def extractFeatures(aWordStart, aWordEnd, pageStart, pageEnd, allowed_pages = 0)
 			# Work in starting and ending pairs, page by page
 			if (wordStart in pageContent) and (wordEnd in pageContent):
 				print('Found on page', page+1)
+				print('\n')
 				print(pageContent)
 				print('\n')
 				unitFeature = get_value_function(pageContent, wordStart, wordEnd)
@@ -189,6 +190,10 @@ num_files = len(glob.glob1(path,'*.pdf'))
 extList = []
 newList = []
 
+# EC_FANS
+excel_file = 'EC_FANS.xlsx'
+df_ec = pd.read_excel(excel_file, dtype={'Item': str, 'Gross price': float})
+
 for fileName in glob.glob('*.pdf'):
 	# Initialize ----------------------------------------------
 	aDVSize = []
@@ -227,10 +232,12 @@ for fileName in glob.glob('*.pdf'):
 		df_units[col] = df_units[col].astype(int)
 		df_units[col] = df_units[col] + 1
 
+	'''
 	name = 'Units.xlsx'
 	writer = pd.ExcelWriter(name)
 	df_units.to_excel(writer, index = False)
 	writer.save()
+	'''
 	
 	aWordStart = ['-fancaudal de aire', 'húmedas)', 'Potencia', 'Velocidad (nominal)', 'incl. el control de velocidad']
 	aWordEnd = ['m', 'Pa', 'kW', 'RPM', 'kW']
@@ -253,12 +260,29 @@ for fileName in glob.glob('*.pdf'):
 	for col, list in zip(cols, list_of_lists):
 		df[col] = list
 	#---------------------------------------------------------------------------------------------------------------#
+	# Dataframe cleaning for several motors
+	# Number of fans
+	df['No Fans'] = 1
+	df.loc[df['Motor Power'].str.contains('total'), 'No Fans'] = df['Motor Power'].str.slice(6, 7, 1)
+	df['No Fans'] = df['No Fans'].astype(int)
+
+	# Motor Power
+	df.loc[df['Motor Power'].str.contains('nominal'), 'Motor Power'] = df['Motor Power'].str.slice(7)
+	df.loc[df['Motor Power'].str.contains('total'), 'Motor Power'] = df['Motor Power'].str.slice(10)
+
+	# ID
+	df['ID'] = df['Motor Power'] + '-' + df['RPM']
+
+	# Old Gross
+	df = pd.merge(df, df_ec.loc[:, ['ID', 'Gross price']], on='ID')
+	df['Gross price'] = df['Gross price'].values * df['No Fans'].values
+	#---------------------------------------------------------------------------------------------------------------#
 
 	print('\n')
 
-	name = 'Fans Results.xlsx'
-	writer = pd.ExcelWriter(name)
-	df.to_excel(writer, index = False)
-	writer.save()
+name = 'Fans Results.xlsx'
+writer = pd.ExcelWriter(name)
+df.to_excel(writer, index = False)
+writer.save()
 
-	pdfFileObj.close()
+pdfFileObj.close()
