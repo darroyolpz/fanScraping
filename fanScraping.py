@@ -10,15 +10,7 @@ def extractContent(pageNumber):
 # ---------------------------------------------------------
 
 # Function to get the range of pages of each unit ---------
-'''
-One of the first functions to run. It separates the units inside the
-entire pdf and allows a cleaner scraping. 
-It must have a keyword to separate one unit from the other: in our case, 'Unit no.:'.
-It returns the first and
-last page of each unit. Useful for future iterations.
-'''
 def pagesFunction(keyword = 'Unit no.:'):
-	print('Page function-----------------------------------')
 	aPageStart, aPageEnd = [], []
 	last_page = number_of_pages - 1
 
@@ -36,9 +28,6 @@ def pagesFunction(keyword = 'Unit no.:'):
 
 	# Get the very last page
 	aPageEnd.append(last_page)
-
-	print('Page function completed!------------------------')
-	print('\n')
 	return aPageStart, aPageEnd
 
 # Get SINGLE value function---------------------------------
@@ -111,14 +100,6 @@ def fpFunction():
 	return outter_list
 
 # Possible main--------------------------------------------
-'''
-In order to get the ID of each fan, just retun the page number.
-Create a new function to match the page number and the unit.
-One should call it and just pass the aWordStart and aWordEnd lists to
-extract the features. It should be performed across the entire document
-(pageStart = 0, pageEnd = last_page) but it's good to have such function
-so that it can check unit by unit
-'''
 def extractFeatures(aWordStart, aWordEnd, pageStart, pageEnd, allowed_pages = 0):
 	outter_list = []
 	for page in range(pageStart, pageEnd):
@@ -135,6 +116,8 @@ def extractFeatures(aWordStart, aWordEnd, pageStart, pageEnd, allowed_pages = 0)
 			# Work in starting and ending pairs, page by page
 			if (wordStart in pageContent) and (wordEnd in pageContent):
 				print('Found on page', page+1)
+				print(pageContent)
+				print('\n')
 				unitFeature = get_value_function(pageContent, wordStart, wordEnd)
 
 				if unitFeature == 'Error flag!':
@@ -239,19 +222,37 @@ for fileName in glob.glob('*.pdf'):
 	df_units = pd.DataFrame(units, columns = columns_units)
 
 	# To get an accurate reading in the Excel file
-	df_units['Page start'] = df_units['Page start'] + 1
-	df_units['Page end'] = df_units['Page end'] + 1
+	cols = ['Page start', 'Page end']
+	for col in cols:
+		df_units[col] = df_units[col].astype(int)
+		df_units[col] = df_units[col] + 1
 
 	name = 'Units.xlsx'
 	writer = pd.ExcelWriter(name)
 	df_units.to_excel(writer, index = False)
 	writer.save()
 	
-	aWordStart = ['caudal de aire', 'húmedas)', 'Potencia', 'Velocidad (nominal)', 'Amperios']
-	aWordEnd = ['m', 'Pa', 'kW', 'RPM', 'Tensión']
-	columns = ['Page', 'Airflow', 'Static Press.', 'Power Consump.', 'RPM', 'Amperes']
+	aWordStart = ['-fancaudal de aire', 'húmedas)', 'Potencia', 'Velocidad (nominal)', 'incl. el control de velocidad']
+	aWordEnd = ['m', 'Pa', 'kW', 'RPM', 'kW']
+	columns = ['Page', 'Airflow', 'Static Press.', 'Motor Power', 'RPM', 'Consump. kW']
 	outter = extractFeatures(aWordStart, aWordEnd, 0, last_page, 1)
 	df = pd.DataFrame(outter, columns = columns)
+	df['Page'] = df['Page'].astype(int)
+
+	#---------------------------------------------------------------------------------------------------------------#
+	# Merge the fans with the size of the units
+	cols = ['Line', 'AHU', 'Ref']
+	line_list, ahu_list, ref_list = [], [], []
+	list_of_lists = [line_list, ahu_list, ref_list]
+
+	for fan_page in df['Page'].values:
+		for col, list in zip(cols, list_of_lists):
+			value = df_units.loc[(df_units['Page start'].values < fan_page) & (df_units['Page end'] > fan_page), col].values[0]
+			list.append(value)
+
+	for col, list in zip(cols, list_of_lists):
+		df[col] = list
+	#---------------------------------------------------------------------------------------------------------------#
 
 	print('\n')
 
