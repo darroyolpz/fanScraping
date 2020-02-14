@@ -121,6 +121,12 @@ def extractFeatures(aWordStart, aWordEnd, pageStart, pageEnd, allowed_pages = 1)
 				print('\n')
 				unitFeature = get_value_function(pageContent, wordStart, wordEnd)
 
+				# Important in case the next wordStart is above the previos one
+				split_word = unitFeature + wordEnd
+				print('Split_word:', split_word)
+				posEnd = pageContent.index(split_word)
+				pageContent = pageContent[posEnd:]
+
 				if unitFeature == 'Error flag!':
 					print('Error flag! Length not correct.')
 					break
@@ -256,7 +262,14 @@ for fileName in glob.glob('*.pdf'):
 	# Dataframe cleaning for several motors
 	# Number of fans
 	df['No Fans'] = 1
+	print('df before fans:')
+	print(df['Motor Power'])
+	print('\n')
 	df.loc[df['Motor Power'].str.contains('total'), 'No Fans'] = df['Motor Power'].str.slice(6, 7, 1)
+
+	print('df after fans:')
+	print(df)
+	print('\n')
 	df['No Fans'] = df['No Fans'].astype(int)
 
 	# Motor Power
