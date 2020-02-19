@@ -38,7 +38,8 @@ def get_value_function(pageContent, wordStart, wordEnd, min_len = 1, max_len = 4
 
 	#posEnd = indexFunction(wordEnd, newContent)
 	posEnd = newContent.index(wordEnd)
-	unitFeature = newContent[:posEnd].strip()
+	#unitFeature = newContent[:posEnd].strip()
+	unitFeature = newContent[:posEnd]
 
 	# Check the lenght in order to avoid errors
 	if (len(unitFeature) > min_len) & (len(unitFeature) < max_len):
@@ -125,6 +126,9 @@ def extractFeatures(aWordStart, aWordEnd, pageStart, pageEnd, allowed_pages = 1)
 				print('Feature found:', unitFeature)
 				split_word = unitFeature + wordEnd
 				print('Split_word:', split_word)
+				if split_word in pageContent:
+					print('Split_word in pageContent')
+					print('\n')
 				posEnd = pageContent.index(split_word)
 				#pageContent = pageContent[posEnd:]
 
@@ -265,15 +269,21 @@ for fileName in glob.glob('*.pdf'):
 	df['No Fans'] = 1
 	print('df before fans:')
 	print(df['Motor Power'])
+
 	print('\n')
-	df.loc[df['Motor Power'].str.contains('total'), 'No Fans'] = df['Motor Power'].str.slice(6, 7, 1)
+	df.loc[df['Motor Power'].str.contains('total'), 'No Fans'] = df['Motor Power'].str.slice(7, 8, 1)
 	df['No Fans'] = df['No Fans'].astype(int)
 
 	# Motor Power
-	df.loc[df['Motor Power'].str.contains('nominal'), 'Motor Power'] = df['Motor Power'].str.slice(7)
-	df.loc[df['Motor Power'].str.contains('total'), 'Motor Power'] = df['Motor Power'].str.slice(10)
+	df.loc[df['Motor Power'].str.contains('nominal'), 'Motor Power'] = df['Motor Power'].str.slice(8)
+	df.loc[df['Motor Power'].str.contains('total'), 'Motor Power'] = df['Motor Power'].str.slice(11)
 
-	# ID
+	# ID - cleaning
+	cols = ['Motor Power', 'RPM']
+
+	for col in cols:
+		df[col] = df[col].str.replace(" ", "")
+
 	df['ID'] = df['Motor Power'] + '-' + df['RPM']
 
 	# Show results
@@ -285,6 +295,7 @@ for fileName in glob.glob('*.pdf'):
 	df = pd.merge(df, df_ec.loc[:, ['ID', 'Gross price']], on='ID')
 	df['Gross price'] = df['Gross price'].values * df['No Fans'].values
 	#---------------------------------------------------------------------------------------------------------------#
+
 	# Last tweaks
 	df['File name'] = fileName
 	df_outter = df_outter.append(df)
