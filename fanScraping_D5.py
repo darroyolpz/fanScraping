@@ -130,7 +130,7 @@ def extractFeatures(aWordStart, aWordEnd, pageStart, pageEnd, allowed_pages = 1)
 					print('Split_word in pageContent')
 					print('\n')
 				posEnd = pageContent.index(split_word)
-				#pageContent = pageContent[posEnd:]
+				pageContent = pageContent[posEnd:]
 
 				if unitFeature == 'Error flag!':
 					print('Error flag! Length not correct.')
